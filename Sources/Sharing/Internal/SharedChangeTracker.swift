@@ -14,11 +14,14 @@ public struct SharedChangeTracker: Hashable, Sendable {
     deinit {
       guard reportUnassertedChanges else { return }
       forEach { change in
+        // Capture change.value once to avoid SIL verification error with multiple
+        // existential openings of the same associated type in Swift 6.2.3+
+        let value = change.value
         reportIssue(
           """
           Tracked unasserted changes to \
-          'Shared<\(typeName(type(of: change.value)))>(\(String(reflecting: change.key)))': \
-          \(String(reflecting: change.value)) → \(String(reflecting: change.key.wrappedValue))
+          'Shared<\(typeName(type(of: value)))>(\(String(reflecting: change.key)))': \
+          \(String(reflecting: value)) → \(String(reflecting: change.key.wrappedValue))
           """,
           fileID: change.fileID,
           filePath: change.filePath,
